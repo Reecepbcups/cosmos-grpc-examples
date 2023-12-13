@@ -17,6 +17,9 @@ import (
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+
+	"github.com/cosmos/cosmos-sdk/codec"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
 type codecRegistry func(registry codectypes.InterfaceRegistry)
@@ -49,4 +52,11 @@ func DefaultEncoding() testutil.TestEncodingConfig {
 		slashing.AppModuleBasic{},
 		consensus.AppModuleBasic{},
 	)
+}
+
+func SetupRegistry() *codec.ProtoCodec {
+	registry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(registry)
+	cdc := codec.NewProtoCodec(registry)
+	return cdc
 }

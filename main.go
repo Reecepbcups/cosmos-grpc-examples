@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"google.golang.org/grpc"
@@ -18,18 +15,17 @@ type Chain struct {
 }
 
 func main() {
-	registry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(registry)
-	cdc := codec.NewProtoCodec(registry)
+	cdc := SetupRegistry()
 
-	chain, err := mainE()
+	hubChain, err := createChain("cosmos-grpc.polkachu.com:14990")
 	if err != nil {
 		panic(err)
 	}
 
 	// propId := 1 // text prop
 	propId := 858 // community spend prop
-	resp, err := chain.GetProposalApi(context.Background(), uint64(propId))
+
+	resp, err := hubChain.GetProposal(context.Background(), uint64(propId))
 	if err != nil {
 		panic(err)
 	}
@@ -48,11 +44,13 @@ func main() {
 		fmt.Println(commPoolProp.Title, commPoolProp.Amount, commPoolProp.Recipient)
 	}
 
+	if err != nil {
+		panic(err)
+	}
+
 }
 
-func mainE() (*Chain, error) {
-	endpoint := "cosmos-grpc.polkachu.com:14990"
-
+func createChain(endpoint string) (*Chain, error) {
 	grpcConn, err := grpc.Dial(
 		endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -65,7 +63,7 @@ func mainE() (*Chain, error) {
 	}, nil
 }
 
-func (c *Chain) GetProposalApi(ctx context.Context, proposalId uint64) (*govv1beta1.QueryProposalResponse, error) {
+func (c *Chain) GetProposal(ctx context.Context, proposalId uint64) (*govv1beta1.QueryProposalResponse, error) {
 	queryClient := govv1beta1.NewQueryClient(c.GrpcConn)
 
 	resp, err := queryClient.Proposal(
